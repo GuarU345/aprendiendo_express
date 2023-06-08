@@ -1,61 +1,82 @@
-require('./mongo')
-require('dotenv').config()
+require("./mongo");
+require("dotenv").config();
 
-const express = require('express');
-const cors = require('cors');
+const express = require("express");
+const cors = require("cors");
 const app = express();
-const Product = require('./models/Product')
+const Product = require("./models/Product");
 
-
-app.use(cors())
+app.use(cors());
 app.use(express.json());
-const PORT = process.env.PORT
+const PORT = process.env.PORT;
 
-
-
-app.get('/', (req, res) => {
-    res.send('<h1>Products</h1>');
+app.get("/", (req, res) => {
+  res.send("<h1>Products</h1>");
 });
 
-app.get('/api/products', (req, res) => {
-    Product.find({})
-    .then(products => {
-        res.json(products)
+app.get("/api/products", (req, res) => {
+  Product.find({}).then((products) => {
+    res.json(products);
+  });
+});
+
+app.get("/api/products/:id", (req, res, next) => {
+  const { id } = req.params;
+  Product.findById(id)
+    .then((result) => {
+      res.json(result);
     })
+    .catch((err) => next(err));
 });
 
-app.get('/api/products/:id', (req, res) => {
-    const product_id = Number(req.params.id)
-    const product = PRODUCTS.find(product => product.id === product_id);
+app.post("/api/products", (req, res) => {
+  const { name, price, description } = req.body;
 
-    if (!product) {
-        return res.status(404).send('Product not found');
-    }
-    res.json(product);
-})
+  const product = new Product({
+    name: name,
+    price: price,
+    description: description,
+  });
 
-app.post('/api/products', (req, res) => {
-    const { name, price, description } = req.body;
-    const ids = PRODUCTS.map(product => product.id)
-    const maxId = Math.max(...ids)
+  product.save().then((savedProduct) => {
+    res.json(savedProduct);
+  });
+});
 
-    const newProduct = {
-        "id": maxId + 1,
-        "name": name,
-        "price": price,
-        "description": description
-    }
+app.put("/api/products/:id", (req, res, next) => {
+  const { id } = req.params;
+  const { name, price, description } = req.body;
 
-    PRODUCTS = [...PRODUCTS, newProduct];
-    res.json(PRODUCTS)
-})
+  const product = {
+    name: name,
+    price: price,
+    description: description,
+  };
 
-app.delete('/api/products/:id', (req, res) => {
-    const product_id = Number(req.params.id)
-    PRODUCTS = PRODUCTS.filter(product => product.id !== product_id)
-    res.status(204).end()
-})
+  Product.findByIdAndUpdate(id, product, { new: true })
+    .then((product) => {
+      res.json(product);
+    })
+    .catch((err) => next(err));
+});
+
+app.delete("/api/products/:id", (req, res, next) => {
+  const { id } = req.params;
+  Product.findByIdAndRemove(id)
+    .then((result) => {
+      res.status(204).end();
+    })
+    .catch((err) => next(err));
+});
+
+app.use((error, request, response, next) => {
+  if (error.name === "CastError") {
+    response.status(400).send({ error: "id used is malformed" });
+  } else {
+    response.status(500).end();
+  }
+});
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
