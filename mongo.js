@@ -11,23 +11,8 @@ mongoose
     console.log(err);
   });
 
+process.on('uncaughtException',() => {
+  mongoose.connection.destroy()
+})
 
-
-// Product.find({}).then(result => {
-//     console.log(result)
-// })
-
-// const product = new Product({
-//     name: "Product 1",
-//     price: 100,
-//     description: "This is a product 1"
-// })
-
-// product.save().then((result) => {
-//     console.log(result)
-//     mongoose.connection.close()
-// })
-// .catch((err) => {
-//     console.log(err)
-// })
 
